@@ -2,273 +2,258 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>耗呆怡美食拉霸機</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>耗呆怡打地鼠</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        :root {
-            --primary: #ff4757;
-            --secondary: #ffa502;
-            --accent: #2ed573;
-        }
-
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background: radial-gradient(circle at center, #fff5f5 0%, #ffe0e0 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            background: #fdf2f2;
+            overflow: hidden;
+            touch-action: manipulation;
         }
 
-        /* 標題浮動動畫 */
-        .floating {
-            animation: floating 3s ease-in-out infinite;
+        /* 地鼠洞樣式 */
+        .hole {
+            position: relative;
+            background: #4b3621;
+            border-radius: 50% / 30%;
+            box-shadow: inset 0 10px 0 rgba(0,0,0,0.3);
+            overflow: hidden;
         }
-        @keyframes floating {
-            0%, 100% { transform: translateY(0px); }
+
+        /* 地鼠動畫 */
+        .mole {
+            position: absolute;
+            bottom: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.2s ease-out;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .mole.up {
+            bottom: 10%;
+        }
+
+        /* 木槌動畫 */
+        #mallet {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            pointer-events: none;
+            z-index: 100;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), left 0.1s, top 0.1s;
+            transform-origin: bottom right;
+        }
+
+        .hit-animation {
+            transform: rotate(-45deg) scale(1.2) !important;
+        }
+
+        /* 女孩角色漂浮動畫 */
+        .girl-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
 
-        /* 拉霸機外框效果 */
-        .slot-machine {
-            background: #2d3436;
-            border: 10px solid #1e272e;
-            box-shadow: 
-                0 0 20px rgba(255, 71, 87, 0.5),
-                inset 0 0 15px rgba(0,0,0,0.5);
-            position: relative;
+        /* 得分彈跳動畫 */
+        .score-pop {
+            animation: pop 0.3s ease;
         }
-
-        .reel-container {
-            background: #f8f9fa;
-            border: 6px inset #333;
-            height: 100px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .reel {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .food-item {
-            height: 100px;
-            min-height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            font-weight: 900;
-            color: #2d3436;
-            text-align: center;
-            width: 100%;
-        }
-
-        /* 歡迎層 */
-        #welcomeOverlay {
-            transition: all 0.5s ease-out;
-        }
-        .fade-out {
-            opacity: 0;
-            visibility: hidden;
-            transform: scale(1.1);
-        }
-
-        .btn-gradient {
-            background: linear-gradient(to bottom, #f1c40f, #f39c12);
-            box-shadow: 0 6px 0 #d35400;
-            transition: all 0.1s;
-        }
-        .btn-gradient:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 #d35400;
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
-<body class="p-4">
+<body class="flex flex-col items-center justify-start min-h-screen pt-8">
 
-    <!-- 歡迎開場畫面 -->
-    <div id="welcomeOverlay" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center">
-        <div class="mb-8 floating">
-            <div class="text-6xl mb-4">😋</div>
-            <h1 class="text-4xl font-black text-red-500 mb-2">耗呆怡美食拉霸機</h1>
-            <p class="text-gray-500">士林前港公園周邊精選小吃</p>
+    <!-- 頂部資訊欄 -->
+    <div class="z-20 w-full max-w-md px-6 flex justify-between items-center mb-4">
+        <div class="bg-white px-4 py-2 rounded-2xl shadow-lg border-2 border-pink-200">
+            <span class="text-gray-500 font-bold text-sm">得分:</span>
+            <span id="score" class="text-3xl font-black text-pink-600 ml-2">0</span>
         </div>
-        <button onclick="enterApp()" class="bg-red-500 text-white px-12 py-4 rounded-full text-xl font-bold shadow-lg hover:bg-red-600 transition-all">
-            肚子餓了，開抽！
+        <button id="startBtn" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-2xl font-bold shadow-lg transition-all active:scale-95">
+            開始遊戲
         </button>
-        <p class="mt-8 text-xs text-gray-400">專為吃貨設計的導航小幫手</p>
     </div>
 
-    <div class="max-w-md w-full text-center space-y-8">
-        <header class="pt-4">
-            <h1 class="text-4xl font-black text-gray-800 mb-2 flex items-center justify-center">
-                <span class="mr-2">🎰</span> 耗呆怡美食 <span class="text-red-500">拉霸</span>
-            </h1>
-            <div class="inline-block bg-white px-4 py-1 rounded-full shadow-sm text-sm font-bold text-gray-500 border border-gray-100">
-                📍 前港公園 2km 內 • 4★ 嚴選
-            </div>
-        </header>
-
-        <!-- 拉霸機本體 -->
-        <div class="slot-machine rounded-[2rem] p-8">
-            <div class="reel-container rounded-xl shadow-inner mb-8 bg-white">
-                <div id="reel" class="reel">
-                    <div class="food-item">今天吃什麼？</div>
-                </div>
-            </div>
-
-            <button id="spinBtn" class="btn-gradient w-full py-5 rounded-2xl text-2xl font-black text-white uppercase tracking-tighter">
-                按下開始拉霸
-            </button>
-            
-            <!-- 裝飾燈泡 -->
-            <div class="mt-4 flex justify-between px-2">
-                <div class="w-3 h-3 rounded-full bg-red-400 animate-pulse"></div>
-                <div class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse" style="animation-delay: 0.2s"></div>
-                <div class="w-3 h-3 rounded-full bg-green-400 animate-pulse" style="animation-delay: 0.4s"></div>
-                <div class="w-3 h-3 rounded-full bg-blue-400 animate-pulse" style="animation-delay: 0.6s"></div>
-            </div>
+    <!-- 角色區 -->
+    <div class="relative w-full max-w-md flex flex-col items-center mb-4">
+        <h1 class="text-3xl font-black text-red-600 mb-2">耗呆怡打地鼠</h1>
+        
+        <!-- 初始設計的女孩角色 SVG -->
+        <div class="girl-float relative w-48 h-48">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- 頭髮 -->
+                <path d="M40,100 Q40,40 100,40 Q160,40 160,100 L160,160 Q100,170 40,160 Z" fill="#3d2b1f" />
+                <!-- 臉 -->
+                <circle cx="100" cy="110" r="50" fill="#ffe0bd" />
+                <!-- 眼睛 -->
+                <circle cx="85" cy="105" r="5" fill="#333" />
+                <circle cx="115" cy="105" r="5" fill="#333" />
+                <!-- 嘴巴 -->
+                <path d="M85,125 Q100,140 115,125" stroke="#ff8a80" stroke-width="3" fill="none" />
+                <!-- 腮紅 -->
+                <circle cx="75" cy="115" r="8" fill="#ffb3ba" opacity="0.6" />
+                <circle cx="125" cy="115" r="8" fill="#ffb3ba" opacity="0.6" />
+                <!-- 身體 -->
+                <path d="M60,160 Q100,140 140,160 L140,200 L60,200 Z" fill="#ff4d4d" />
+            </svg>
         </div>
+    </div>
 
-        <!-- 結果卡片 -->
-        <div id="resultContainer" class="hidden">
-            <div class="bg-white rounded-3xl p-6 shadow-2xl border-2 border-dashed border-red-200 relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 text-6xl opacity-10 rotate-12">🍜</div>
-                
-                <div class="relative z-10">
-                    <span id="resType" class="inline-block bg-orange-100 text-orange-600 text-xs px-3 py-1 rounded-full font-bold mb-2">類別</span>
-                    <h2 id="resName" class="text-3xl font-black text-gray-800 mb-3">店名載入中</h2>
-                    
-                    <div class="flex justify-center items-center space-x-2 mb-6">
-                        <div class="bg-yellow-400 text-white px-3 py-1 rounded-lg font-black flex items-center">
-                            <span class="mr-1">★</span>
-                            <span id="resRating">4.5</span>
-                        </div>
-                        <span class="text-gray-400 text-sm">Google 滿意推薦</span>
-                    </div>
+    <!-- 打地鼠機台 -->
+    <div class="relative grid grid-cols-3 gap-4 p-4 bg-orange-100 rounded-3xl shadow-2xl border-b-8 border-orange-200 max-w-sm w-full mx-4">
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+        <div class="hole h-24 sm:h-28"><div class="mole text-5xl">🐹</div></div>
+    </div>
 
-                    <button id="mapBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold shadow-lg transition-all flex items-center justify-center">
-                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        導航到這家店
-                    </button>
-                </div>
-            </div>
-        </div>
+    <!-- 木槌 SVG -->
+    <div id="mallet">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="20" width="60" height="35" rx="5" fill="#8d6e63" />
+            <rect x="25" y="25" width="50" height="25" rx="3" fill="#a1887f" />
+            <rect x="45" y="55" width="10" height="40" rx="2" fill="#d7ccc8" />
+        </svg>
+    </div>
 
-        <footer class="text-xs text-gray-400 pb-8">
-            <p>© 耗呆怡美食系列 - 地圖資料僅供參考</p>
-        </footer>
+    <!-- 訊息提示 -->
+    <div id="gameMsg" class="mt-4 text-gray-500 font-bold text-center px-4">
+        點擊「開始遊戲」挑戰 30 秒打地鼠！
     </div>
 
     <script>
-        // 店家名單
-        const shops = [
-            { name: "豐盛號 (士林總店)", type: "炭烤土司", rating: "4.0" },
-            { name: "勇氣早餐", type: "精緻早午餐", rating: "4.3" },
-            { name: "及第人家", type: "手工水餃麵食", rating: "4.2" },
-            { name: "海友十全排骨", type: "藥膳排骨", rating: "4.1" },
-            { name: "鍾記原上海生煎包", type: "生煎包小吃", rating: "4.1" },
-            { name: "家鄉碳烤雞排", type: "碳烤雞排", rating: "4.1" },
-            { name: "直火人燒肉丼", type: "日式丼飯", rating: "4.2" },
-            { name: "早吧 Morning Bar", type: "脆皮蛋餅", rating: "4.1" },
-            { name: "滿佳香漢堡店", type: "台式早餐", rating: "4.0" },
-            { name: "郭家蔥油餅", type: "炸蛋蔥油餅", rating: "4.1" },
-            { name: "鵝肉川", type: "熱炒鵝肉", rating: "4.1" },
-            { name: "忠誠山東蔥油餅", type: "燈亮有餅", rating: "4.4" },
-            { name: "丞祖胡椒餅", type: "胡椒餅", rating: "4.2" },
-            { name: "斌大腸包小腸", type: "夜市名產", rating: "4.1" },
-            { name: "阿輝麵線", type: "米其林麵線", rating: "4.0" }
-        ];
+        const holes = document.querySelectorAll('.hole');
+        const moles = document.querySelectorAll('.mole');
+        const scoreBoard = document.querySelector('#score');
+        const startBtn = document.querySelector('#startBtn');
+        const mallet = document.querySelector('#mallet');
+        const gameMsg = document.querySelector('#gameMsg');
 
-        const reel = document.getElementById('reel');
-        const spinBtn = document.getElementById('spinBtn');
-        const resultContainer = document.getElementById('resultContainer');
-        const resName = document.getElementById('resName');
-        const resRating = document.getElementById('resRating');
-        const resType = document.getElementById('resType');
-        const mapBtn = document.getElementById('mapBtn');
-        const welcomeOverlay = document.getElementById('welcomeOverlay');
+        let lastHole;
+        let timeUp = false;
+        let score = 0;
 
-        let isSpinning = false;
+        // 初始化木槌位置
+        function resetMallet() {
+            mallet.style.left = (window.innerWidth / 2 - 40) + 'px';
+            mallet.style.top = '250px';
+        }
+        resetMallet();
 
-        function enterApp() {
-            welcomeOverlay.classList.add('fade-out');
-            setTimeout(() => welcomeOverlay.style.display = 'none', 500);
+        function randomTime(min, max) {
+            return Math.round(Math.random() * (max - min) + min);
         }
 
-        function initReel() {
-            reel.innerHTML = '';
-            const shuffled = [...shops].sort(() => Math.random() - 0.5);
-            // 重複名單來增加滾動長度
-            const displayList = [...shuffled, ...shuffled, ...shuffled, ...shuffled, ...shuffled];
-            
-            displayList.forEach(shop => {
-                const div = document.createElement('div');
-                div.className = 'food-item';
-                div.innerText = shop.name;
-                reel.appendChild(div);
-            });
-            return shuffled;
+        function randomHole(holes) {
+            const idx = Math.floor(Math.random() * holes.length);
+            const hole = holes[idx];
+            if (hole === lastHole) return randomHole(holes);
+            lastHole = hole;
+            return hole;
         }
 
-        spinBtn.addEventListener('click', () => {
-            if (isSpinning) return;
+        function peep() {
+            const time = randomTime(600, 1200);
+            const hole = randomHole(holes);
+            const mole = hole.querySelector('.mole');
+            mole.classList.add('up');
             
-            isSpinning = true;
-            resultContainer.classList.add('hidden');
-            const shuffled = initReel();
-            
-            const itemHeight = 100;
-            const winnerIndex = Math.floor(Math.random() * shuffled.length);
-            // 滾動到倒數第二組的對應位置，確保動畫長度充足
-            const targetTranslate = (3 * shuffled.length + winnerIndex) * itemHeight;
-            
-            reel.style.transition = 'none';
-            reel.style.transform = `translateY(0)`;
-            reel.offsetHeight; // 強制瀏覽器重繪
-            
-            reel.style.transition = 'transform 3.5s cubic-bezier(0.15, 0, 0.15, 1)';
-            reel.style.transform = `translateY(-${targetTranslate}px)`;
-
             setTimeout(() => {
-                const winner = shuffled[winnerIndex];
-                showResult(winner);
-                isSpinning = false;
-            }, 3700);
+                mole.classList.remove('up');
+                if (!timeUp) peep();
+            }, time);
+        }
+
+        function startGame() {
+            scoreBoard.textContent = 0;
+            score = 0;
+            timeUp = false;
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50');
+            gameMsg.textContent = "遊戲開始，抓地鼠囉！";
+            
+            peep();
+            
+            setTimeout(() => {
+                timeUp = true;
+                startBtn.disabled = false;
+                startBtn.classList.remove('opacity-50');
+                gameMsg.textContent = `時間到！最終得分： ${score}`;
+                resetMallet();
+            }, 30000); 
+        }
+
+        function handleBonk(e) {
+            // 獲取點擊或觸控座標
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            if (clientX && clientY) {
+                mallet.style.left = (clientX - 40) + 'px';
+                mallet.style.top = (clientY - 40) + 'px';
+            }
+            
+            mallet.classList.add('hit-animation');
+            setTimeout(() => mallet.classList.remove('hit-animation'), 100);
+
+            // 判斷是否為地鼠並得分
+            if (this.classList.contains('up')) {
+                score++;
+                this.classList.remove('up');
+                scoreBoard.textContent = score;
+                scoreBoard.classList.add('score-pop');
+                setTimeout(() => scoreBoard.classList.remove('score-pop'), 300);
+            }
+        }
+
+        moles.forEach(mole => {
+            mole.addEventListener('mousedown', handleBonk);
+            mole.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleBonk.call(mole, e);
+            });
         });
 
-        function showResult(shop) {
-            resName.innerText = shop.name;
-            resRating.innerText = shop.rating;
-            resType.innerText = shop.type;
-            resultContainer.classList.remove('hidden');
-            
-            // 平滑滾動到結果
-            setTimeout(() => {
-                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-            
-            mapBtn.onclick = () => {
-                const query = encodeURIComponent(shop.name + " 士林");
-                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
-            };
-        }
+        startBtn.addEventListener('click', startGame);
 
-        // 初始載入
-        initReel();
+        // 點擊背景也會移動木槌
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.mole')) return;
+            mallet.style.left = (e.pageX - 40) + 'px';
+            mallet.style.top = (e.pageY - 40) + 'px';
+            mallet.classList.add('hit-animation');
+            setTimeout(() => mallet.classList.remove('hit-animation'), 100);
+        });
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.mole')) return;
+            const touch = e.touches[0];
+            mallet.style.left = (touch.pageX - 40) + 'px';
+            mallet.style.top = (touch.pageY - 40) + 'px';
+            mallet.classList.add('hit-animation');
+            setTimeout(() => mallet.classList.remove('hit-animation'), 100);
+        });
+
     </script>
 </body>
 </html>
-
 
